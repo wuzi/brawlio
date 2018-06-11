@@ -45,7 +45,7 @@ function create() {
 
     this.anims.create({
         key: 'walk',
-        frames: this.anims.generateFrameNames('player', { prefix: 'p1_walk', start: 1, end: 11, zeroPad: 2 }),
+        frames: this.anims.generateFrameNames('player', { prefix: 'p1_walk', start: 1, end: 4, zeroPad: 2 }),
         frameRate: 10,
         repeat: -1
     });
