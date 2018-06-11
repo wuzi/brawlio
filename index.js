@@ -36,6 +36,10 @@ io.on('connection', function (socket) {
         players[socket.id].currentAnim = movementData.currentAnim;
         socket.broadcast.emit('playerMoved', players[socket.id]);
     });
+
+    socket.on('shootProjectile', function (projectileData) {
+        socket.broadcast.emit('projectileShot', projectileData);
+    });
 });
 
 server.listen(3000, function () {

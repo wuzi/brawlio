@@ -23,6 +23,7 @@ function preload() {
     this.load.tilemapTiledJSON('map', 'assets/map.json');
     this.load.spritesheet('tiles', 'assets/tiles.png', { frameWidth: 70, frameHeight: 70 });
     this.load.atlas('player', 'assets/player.png', 'assets/player.json');
+    this.load.image('fireball', 'assets/fireball.png');
 }
 
 function create() {
@@ -50,6 +51,7 @@ function create() {
     });
 
     this.socket = io();
+    this.projectiles = this.physics.add.group();
     this.otherPlayers = this.physics.add.group();
 
     this.socket.on('currentPlayers', function (players) {
@@ -84,17 +86,25 @@ function create() {
         });
     });
 
+    this.socket.on('projectileShot', function (projectileInfo) {
+        shootProjectile(self, projectileInfo.shooterId, projectileInfo.x, projectileInfo.y, projectileInfo.flipX, false);
+    });
+
     this.cursors = this.input.keyboard.createCursorKeys();
     this.controls = {
         up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
         down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
         left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
         right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+        space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
     };
 }
 
 function update() {
     if (this.player) {
+        var self = this;
+
+        // Movement
         if (this.cursors.left.isDown || this.controls.left.isDown) {
             this.player.body.setVelocityX(-200);
             this.player.anims.play('walk', true);
@@ -108,10 +118,26 @@ function update() {
             this.player.anims.play('idle', true);
         }
 
+        // Jump
         if ((this.cursors.up.isDown || this.controls.up.isDown) && this.player.body.onFloor()) {
             this.player.body.setVelocityY(-500);
         }
 
+        // Attack
+        if (Phaser.Input.Keyboard.JustDown(this.controls.space) && !this.player.lastShot) {
+            shootProjectile(this, this.socket.id, this.player.x, this.player.y, this.player.flipX);
+        }
+
+        if (this.player.lastShot > 0) this.player.lastShot--;
+
+        // Destroy projectile if out of bounds
+        this.projectiles.getChildren().forEach(function (projectile) {
+            if (projectile.x > self.map.widthInPixels || projectile.x < 0) {
+                projectile.destroy();
+            }
+        });
+
+        // Send position to server
         var x = this.player.x;
         var y = this.player.y;
 
@@ -137,7 +163,7 @@ function addPlayer(self, playerInfo) {
     self.cameras.main.setBounds(0, 0, self.map.widthInPixels, self.map.heightInPixels);
     self.cameras.main.startFollow(self.player);
 
-    self.cameras.main.setBackgroundColor('#ccccff');
+    self.cameras.main.setBackgroundColor('#A6CCFF');
 }
 
 function addPlayers(self, playerInfo) {
@@ -150,4 +176,34 @@ function addPlayers(self, playerInfo) {
 
     otherPlayer.body.setSize(otherPlayer.width, otherPlayer.height - 8);
     self.physics.add.collider(self.groundLayer, otherPlayer);
+}
+
+function shootProjectile(self, shooterId, x, y, direction, emit = true) {
+    const projectile = self.physics.add.sprite(x + (direction ? -self.player.width/2 : (self.player.width/2)), y, 'fireball');
+    self.projectiles.add(projectile);
+    projectile.body.allowGravity = false;
+    projectile.flipX = direction;
+    projectile.setVelocityX(direction ? -800 : 800);
+
+    // Register collision of projectile was shot by others
+    if (shooterId != self.socket.id) {
+        self.physics.add.overlap(self.player, projectile, projectileCollision, null, this);
+    }
+
+    self.otherPlayers.getChildren().forEach(function (otherPlayer) {
+        if (otherPlayer.playerId != shooterId) {
+            self.physics.add.overlap(otherPlayer, projectile, projectileCollision, null, this);
+        }
+    });
+
+    // Send projectile data
+    if (emit) {
+        self.player.lastShot = 50;
+        self.socket.emit('shootProjectile', { shooterId: self.socket.id, flipX: direction, x: x, y: y });
+    }
+}
+
+function projectileCollision(player, projectile) {
+    projectile.destroy();
+    player.body.setVelocityY(-90);
 }
