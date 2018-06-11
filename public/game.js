@@ -185,7 +185,7 @@ function shootProjectile(self, shooterId, x, y, direction, emit = true) {
     projectile.flipX = direction;
     projectile.setVelocityX(direction ? -800 : 800);
 
-    // Register collision of projectile was shot by others
+    // Register collision of other players projectiles
     if (shooterId != self.socket.id) {
         self.physics.add.overlap(self.player, projectile, projectileCollision, null, this);
     }
@@ -206,4 +206,8 @@ function shootProjectile(self, shooterId, x, y, direction, emit = true) {
 function projectileCollision(player, projectile) {
     projectile.destroy();
     player.body.setVelocityY(-90);
+    player.tint = 0xff0000;
+    setTimeout(() => {
+        player.tint = 0xffffff;
+    }, 75);
 }
