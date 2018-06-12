@@ -50,6 +50,12 @@ function create() {
         repeat: -1
     });
 
+    this.anims.create({
+        key: 'jump',
+        frames: [{ key: 'player', frame: 'p1_jump' }],
+        frameRate: 10,
+    });
+
     this.socket = io();
     this.projectiles = this.physics.add.group();
     this.otherPlayers = this.physics.add.group();
@@ -107,20 +113,21 @@ function update() {
         // Movement
         if (this.cursors.left.isDown || this.controls.left.isDown) {
             this.player.body.setVelocityX(-200);
-            this.player.anims.play('walk', true);
+            if (this.player.body.onFloor()) this.player.anims.play('walk', true);
             this.player.flipX = true;
         } else if (this.cursors.right.isDown || this.controls.right.isDown) {
             this.player.body.setVelocityX(200);
-            this.player.anims.play('walk', true);
+            if (this.player.body.onFloor()) this.player.anims.play('walk', true);
             this.player.flipX = false;
         } else {
             this.player.body.setVelocityX(0);
-            this.player.anims.play('idle', true);
+            this.player.anims.play(this.player.body.onFloor() ? 'idle' : 'jump', true);
         }
 
         // Jump
         if ((this.cursors.up.isDown || this.controls.up.isDown) && this.player.body.onFloor()) {
             this.player.body.setVelocityY(-500);
+            this.player.anims.play('jump', true);
         }
 
         // Attack
@@ -154,7 +161,6 @@ function update() {
 
 function addPlayer(self, playerInfo) {
     self.player = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'player');
-    self.player.setBounce(0.2);
     self.player.setCollideWorldBounds(true);
 
     self.player.body.setSize(self.player.width, self.player.height - 8);
@@ -170,8 +176,6 @@ function addPlayers(self, playerInfo) {
     const otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'player');
     otherPlayer.playerId = playerInfo.playerId;
     self.otherPlayers.add(otherPlayer);
-
-    otherPlayer.setBounce(0.2);
     otherPlayer.setCollideWorldBounds(true);
 
     otherPlayer.body.setSize(otherPlayer.width, otherPlayer.height - 8);
@@ -179,7 +183,7 @@ function addPlayers(self, playerInfo) {
 }
 
 function shootProjectile(self, shooterId, x, y, direction, emit = true) {
-    const projectile = self.physics.add.sprite(x + (direction ? -self.player.width/2 : (self.player.width/2)), y, 'fireball');
+    const projectile = self.physics.add.sprite(x + (direction ? -self.player.width / 2 : (self.player.width / 2)), y, 'fireball');
     self.projectiles.add(projectile);
     projectile.body.allowGravity = false;
     projectile.flipX = direction;
