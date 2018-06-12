@@ -131,11 +131,9 @@ function update() {
         }
 
         // Attack
-        if (Phaser.Input.Keyboard.JustDown(this.controls.space) && !this.player.lastShot) {
+        if (Phaser.Input.Keyboard.JustDown(this.controls.space) && this.player.canShoot) {
             shootProjectile(this, this.socket.id, this.player.x, this.player.y, this.player.flipX);
         }
-
-        if (this.player.lastShot > 0) this.player.lastShot--;
 
         // Destroy projectile if out of bounds
         this.projectiles.getChildren().forEach(function (projectile) {
@@ -170,6 +168,8 @@ function addPlayer(self, playerInfo) {
     self.cameras.main.startFollow(self.player);
 
     self.cameras.main.setBackgroundColor('#A6CCFF');
+
+    self.player.canShoot = true;
 }
 
 function addPlayers(self, playerInfo) {
@@ -202,7 +202,10 @@ function shootProjectile(self, shooterId, x, y, direction, emit = true) {
 
     // Send projectile data
     if (emit) {
-        self.player.lastShot = 50;
+        self.player.canShoot = false;
+        setTimeout(() => {
+            self.player.canShoot = true;
+        }, 500);
         self.socket.emit('shootProjectile', { shooterId: self.socket.id, flipX: direction, x: x, y: y });
     }
 }
