@@ -64,15 +64,27 @@ function create() {
     this.socket.on('currentPlayers', function (players) {
         Object.keys(players).forEach(function (id) {
             if (players[id].playerId === self.socket.id) {
-                addPlayer(self, players[id]);
+                self.player = new Player(self, players[id].playerId, players[id].x, players[id].y);
+
+                // Make camera follow player
+                self.cameras.main.setBounds(0, 0, self.map.widthInPixels, self.map.heightInPixels);
+                self.cameras.main.setBackgroundColor('#A6CCFF');
+                self.cameras.main.startFollow(self.player.sprite);
             } else {
-                addPlayers(self, players[id]);
+                var player = new Player(self, players[id].playerId, players[id].x, players[id].y)
+
+                player.sprite.setPosition(players[id].x, players[id].y);
+                player.sprite.anims.play(players[id].currentAnim, true);
+                player.sprite.flipX = players[id].flipX;
+
+                self.otherPlayers.add(player.sprite);
             }
         });
     });
 
     this.socket.on('newPlayer', function (playerInfo) {
-        addPlayers(self, playerInfo);
+        var player = new Player(self, playerInfo.playerId, playerInfo.x, playerInfo.y);
+        self.otherPlayers.add(player.sprite);
     });
 
     this.socket.on('disconnect', function (playerId) {
@@ -94,7 +106,7 @@ function create() {
     });
 
     this.socket.on('projectileShot', function (projectileInfo) {
-        shootProjectile(self, projectileInfo.shooterId, projectileInfo.x, projectileInfo.y, projectileInfo.flipX, false);
+        new FireBall(self, projectileInfo.shooterId, projectileInfo.x, projectileInfo.y, projectileInfo.flipX);
     });
 
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -113,27 +125,22 @@ function update() {
 
         // Movement
         if (this.cursors.left.isDown || this.controls.left.isDown) {
-            this.player.body.setVelocityX(-200);
-            if (this.player.body.onFloor()) this.player.anims.play('walk', true);
-            this.player.flipX = true;
+            this.player.move(CONSTANT.LEFT);
         } else if (this.cursors.right.isDown || this.controls.right.isDown) {
-            this.player.body.setVelocityX(200);
-            if (this.player.body.onFloor()) this.player.anims.play('walk', true);
-            this.player.flipX = false;
+            this.player.move(CONSTANT.RIGHT);
         } else {
-            this.player.body.setVelocityX(0);
-            this.player.anims.play(this.player.body.onFloor() ? 'idle' : 'jump', true);
+            this.player.sprite.body.setVelocityX(0);
+            this.player.sprite.anims.play(this.player.onFloor() ? 'idle' : 'jump', true);
         }
 
         // Jump
-        if ((this.cursors.up.isDown || this.controls.up.isDown) && this.player.body.onFloor()) {
-            this.player.body.setVelocityY(-500);
-            this.player.anims.play('jump', true);
+        if ((this.cursors.up.isDown || this.controls.up.isDown) && this.player.onFloor()) {
+            this.player.jump();
         }
 
         // Attack
-        if (Phaser.Input.Keyboard.JustDown(this.controls.space) && this.player.canShoot) {
-            shootProjectile(this, this.socket.id, this.player.x, this.player.y, this.player.flipX);
+        if (Phaser.Input.Keyboard.JustDown(this.controls.space)) {
+            this.player.shoot();
         }
 
         // Destroy projectile if out of bounds
@@ -144,78 +151,10 @@ function update() {
         });
 
         // Send position to server
-        var x = this.player.x;
-        var y = this.player.y;
-
-        if (this.player.oldPosition && (x !== this.player.oldPosition.x || y !== this.player.oldPosition.y)) {
-            this.socket.emit('playerMovement', { x: this.player.x, y: this.player.y, flipX: this.player.flipX, currentAnim: this.player.anims.currentAnim.key });
+        if (this.player.sprite.x !== this.player.oldPosition.x || this.player.sprite.y !== this.player.oldPosition.y) {
+            this.socket.emit('playerMovement', { x: this.player.sprite.x, y: this.player.sprite.y, flipX: this.player.sprite.flipX, currentAnim: this.player.sprite.anims.currentAnim.key });
         }
 
-        this.player.oldPosition = {
-            x: this.player.x,
-            y: this.player.y
-        };
+        this.player.oldPosition = { x: this.player.sprite.x, y: this.player.sprite.y };
     }
-}
-
-function addPlayer(self, playerInfo) {
-    self.player = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'player');
-    self.player.setCollideWorldBounds(true);
-
-    self.player.body.setSize(self.player.width, self.player.height - 8);
-    self.physics.add.collider(self.groundLayer, self.player);
-
-    self.cameras.main.setBounds(0, 0, self.map.widthInPixels, self.map.heightInPixels);
-    self.cameras.main.startFollow(self.player);
-
-    self.cameras.main.setBackgroundColor('#A6CCFF');
-
-    self.player.canShoot = true;
-}
-
-function addPlayers(self, playerInfo) {
-    const otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'player');
-    otherPlayer.playerId = playerInfo.playerId;
-    self.otherPlayers.add(otherPlayer);
-    otherPlayer.setCollideWorldBounds(true);
-
-    otherPlayer.body.setSize(otherPlayer.width, otherPlayer.height - 8);
-    self.physics.add.collider(self.groundLayer, otherPlayer);
-}
-
-function shootProjectile(self, shooterId, x, y, direction, emit = true) {
-    const projectile = self.physics.add.sprite(x + (direction ? -self.player.width / 2 : (self.player.width / 2)), y, 'fireball');
-    self.projectiles.add(projectile);
-    projectile.body.allowGravity = false;
-    projectile.flipX = direction;
-    projectile.setVelocityX(direction ? -800 : 800);
-
-    // Register collision of other players projectiles
-    if (shooterId != self.socket.id) {
-        self.physics.add.overlap(self.player, projectile, projectileCollision, null, this);
-    }
-
-    self.otherPlayers.getChildren().forEach(function (otherPlayer) {
-        if (otherPlayer.playerId != shooterId) {
-            self.physics.add.overlap(otherPlayer, projectile, projectileCollision, null, this);
-        }
-    });
-
-    // Send projectile data
-    if (emit) {
-        self.player.canShoot = false;
-        setTimeout(() => {
-            self.player.canShoot = true;
-        }, 500);
-        self.socket.emit('shootProjectile', { shooterId: self.socket.id, flipX: direction, x: x, y: y });
-    }
-}
-
-function projectileCollision(player, projectile) {
-    projectile.destroy();
-    player.body.setVelocityY(-90);
-    player.tint = 0xff0000;
-    setTimeout(() => {
-        player.tint = 0xffffff;
-    }, 75);
 }
