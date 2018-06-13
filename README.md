@@ -1,6 +1,6 @@
 # Brawlio
 
-A multiplayer PvP brawl game, feel free to open a pull request to add features, optimizations, etc.
+A simple multiplayer PvP brawl game, feel free to open a pull request to add features, optimizations, etc.
 
 #### Build Setup
 
@@ -12,3 +12,7 @@ npm install
 npm start
 
 ```
+
+#### Live demo
+
+Check it [here](https://brawlio.herokuapp.com/)!
