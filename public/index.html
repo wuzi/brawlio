@@ -3,9 +3,26 @@
 
 <head>
     <meta charset="utf-8">
+    <title>Brawlio</title>
+    <style>
+        body {
+            background-color: black;
+        }
+
+        #game {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 1280px;
+            height: 600px;
+            margin-left: -640px;
+            margin-top: -300px;
+        }
+    </style>
 </head>
 
 <body>
+    <div id="game"></div>
     <script src="//cdn.jsdelivr.net/npm/phaser@3.9.0/dist/phaser.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="game.js"></script>
