@@ -42,6 +42,7 @@ io.on('connection', function (socket) {
     });
 });
 
-server.listen(3000, function () {
+var port = process.env.PORT || 8080;
+server.listen(port, function () {
     console.log(`Listening on http://localhost:${server.address().port}`);
 });

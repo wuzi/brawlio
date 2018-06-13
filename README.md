@@ -8,7 +8,7 @@ A multiplayer PvP brawl game, feel free to open a pull request to add features, 
 # install dependencies
 npm install
 
-# serve at localhost:3000
+# serve at localhost:8080
 npm start
 
 ```
