@@ -2,6 +2,7 @@ function FireBall(self, playerId, x, y, direction) {
     const projectile = self.physics.add.sprite(x, y, 'fireball');
     self.projectiles.add(projectile);
 
+    projectile.damage = 10;
     projectile.flipX = direction;
     projectile.shooterId = playerId;
     projectile.body.allowGravity = false;
@@ -19,8 +20,27 @@ function FireBall(self, playerId, x, y, direction) {
 }
 
 function projectileCollision(player, projectile) {
+    player.health -= projectile.damage;
+
+    if (player.health <= 0) {
+        player.health = 100;
+        player.x = 32;
+        player.y = 40;
+
+        // flash sprite
+        var counter = 0;
+        var intervalId = setInterval(function () {
+            player.alpha = player.alpha == 1 ? 0.2 : 1;
+            if (++counter === 10) {
+                player.alpha = 1;
+                clearInterval(intervalId);
+            }
+        }, 100);
+    } else {
+        player.tint = 0xff0000;
+        setTimeout(() => { player.tint = 0xffffff; }, 75);
+        player.body.setVelocityY(-90);
+    }
+
     projectile.destroy();
-    player.tint = 0xff0000;
-    player.body.setVelocityY(-90);
-    setTimeout(() => { player.tint = 0xffffff; }, 75);
 }

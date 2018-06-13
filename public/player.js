@@ -10,7 +10,9 @@ function Player(self, id, x, y) {
     this.sprite.on('animationcomplete', this.onAnimationComplete, this);
 
     this.playerId = id;
+    this.sprite.health = 100;
     this.sprite.playerId = id;
+
     this.canShoot = true;
     this.isCasting = false;
     this.oldPosition = {
