@@ -57,6 +57,12 @@ function create() {
         frameRate: 10,
     });
 
+    this.anims.create({
+        key: 'cast',
+        frames: this.anims.generateFrameNames('player', { prefix: 'p1_cast', start: 1, end: 3, zeroPad: 2 }),
+        frameRate: 10
+    });
+
     this.socket = io();
     this.projectiles = this.physics.add.group();
     this.otherPlayers = this.physics.add.group();
@@ -130,7 +136,9 @@ function update() {
             this.player.move(CONSTANT.RIGHT);
         } else {
             this.player.sprite.body.setVelocityX(0);
-            this.player.sprite.anims.play(this.player.onFloor() ? 'idle' : 'jump', true);
+            if (!this.player.isCasting) {
+                this.player.sprite.anims.play(this.player.onFloor() ? 'idle' : 'jump', true);
+            }
         }
 
         // Jump
