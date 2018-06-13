@@ -15,7 +15,8 @@ function Player(self, id, x, y) {
     this.isCasting = false;
     this.oldPosition = {
         x: null,
-        y: null
+        y: null,
+        currentAnim: 'idle'
     };
 }
 

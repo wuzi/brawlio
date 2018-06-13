@@ -159,7 +159,7 @@ function update() {
         });
 
         // Send position to server
-        if (this.player.sprite.x !== this.player.oldPosition.x || this.player.sprite.y !== this.player.oldPosition.y) {
+        if (this.player.sprite.x !== this.player.oldPosition.x || this.player.sprite.y !== this.player.oldPosition.y || this.player.sprite.anims.currentAnim.key !== this.player.oldPosition.currentAnim) {
             this.socket.emit('playerMovement', { x: this.player.sprite.x, y: this.player.sprite.y, flipX: this.player.sprite.flipX, currentAnim: this.player.sprite.anims.currentAnim.key });
         }
 
