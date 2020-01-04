@@ -13,6 +13,10 @@ npm start
 
 ```
 
+#### Gameplay
+
+![gameplay](https://cdn.discordapp.com/attachments/423260465062215682/662849617209196560/unknown.png)
+
 #### Live demo
 
 Check it [here](https://brawlio.herokuapp.com/)!
