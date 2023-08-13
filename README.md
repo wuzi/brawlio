@@ -19,4 +19,4 @@ npm start
 
 #### Live demo
 
-Check it [here](https://brawlio.herokuapp.com/)!
+Check it [here](https://brawlio.wuzi.dev/)!
